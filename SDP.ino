@@ -133,43 +133,42 @@ void enrollStudent()
     case FINGERPRINT_OK:
       break;
    default:
-      Serial.print(F("Unknown error ")); Serial.println(p);
+      Serial.print(F("Unknown error ")); 
       break;
   }
 
 
+Serial.println(F("Writting bytes "));  
   uint8_t bytesReceived[554];
 
-  int i = 0;
-  
-  while (i <= 554 ) {
-        Serial.print(i);
+  int i = 0;int counter = 0;
+  while (i <= 554 ) { 
       if (Serial3.available()) {
+          counter += 1;
           bytesReceived[i++] = Serial3.read();
       }
   }
-  Serial.println(F("Writting bytes "));
-  for (int i = 9; i <= 136; ++i)
+  Serial.print(counter);
+  counter = 9;
+  for(i = 0;i < 128;i++)
   {
-    fp_packet1[i-9] = bytesReceived[i];
+    fp_packet1[i] = bytesReceived[counter++];
   }
-
-  for (int i = 147; i <= 274; ++i)
+  counter = 148;
+  for(i = 0;i < 128;i++)
   {
-    fp_packet2[i-147] = bytesReceived[i];
+    fp_packet2[i] = bytesReceived[counter++];
   }
-
-  for (int i = 285; i <= 412; ++i)
+  counter = 287;
+  for(i = 0;i < 128;i++)
   {
-    fp_packet3[i-285] = bytesReceived[i];
+    fp_packet3[i] = bytesReceived[counter++];
   }
-
-  for (int i = 423; i <= 550; ++i)
+  counter = 426;
+  for(i = 0;i < 128;i++)
   {
-    fp_packet4[i-423] = bytesReceived[i];
-  }
-
-  Serial.println(F("Written"));
+    fp_packet4[i] = bytesReceived[counter++];
+  }      
 }
 
 
@@ -257,13 +256,13 @@ void checkAttendance()
     fp_confidence = finger.confidence;
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
     Serial.println(F("Communication error"));
-    return p;
+
   } else if (p == FINGERPRINT_NOTFOUND) {
     Serial.println(F("Did not find a match"));
-    return p;
+
   } else {
     Serial.println(F("Unknown error"));
-    return p;
+
   }     
 
   
@@ -280,9 +279,7 @@ bool loadData()
 //  DynamicJsonDocument doc(4182);
   DeserializationError error = deserializeJson(doc, Serial);
   if (error) 
-  {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.c_str());
+    {
     return false;
   }
   else
@@ -319,6 +316,7 @@ void sendData()
   switch (op_mode) 
   {
     case 1:
+    {
       doc["id"] = student_id;
       JsonArray data = doc.createNestedArray("fp_packet");
 
@@ -340,18 +338,24 @@ void sendData()
       for (int i = 0; i < 128; ++i)
        {
           data.add(fp_packet4[i]);
-       }                    
-      break;
+       }
+    }                       
+    break;
 
     case 2:
+    {
       doc["id"] = student_id;
-      doc["staus_code"] = staus_code;
-      break;
+      doc["staus_code"] = staus_code;     
+    }
+    break;
 
     case 3:
+    {
       doc["id"] = student_id;
       doc["confidence"] = fp_confidence;
-      break;
+
+    }
+    break;
   }
   serializeJson(doc, Serial);
 }
