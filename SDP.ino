@@ -1,5 +1,13 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <Adafruit_Fingerprint.h>
 #include <ArduinoJson.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 // SoftwareSerial mySerial(2, 3);//serial3 in mega
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&Serial3);//mega
@@ -20,40 +28,84 @@ void setup()
   while(!Serial);
   Serial.begin(9600);
   finger.begin(57600);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }   
+  delay(2000);
   if (finger.verifyPassword()) 
   {
-    Serial.println(F("Found fingerprint sensor!"));
+    display.clearDisplay();  
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 10);
+    display.print(F("Found fingerprint sensor!"));
+    display.display();    
   }
   else 
   {
-    Serial.println(F("Did not find fingerprint sensor :("));
+    display.clearDisplay();  
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 10);
+    display.print(F("Did not find fingerprint sensor :("));
+    display.display();
     while (1) { delay(1); }
   }      
 }
 
+
+
+
+
 void storeFingerPrint(uint8_t CB)
 {
   p = -1;
+  
   while (p != FINGERPRINT_OK) 
   {
     p = finger.getImage();
     switch (p) 
     {
       case FINGERPRINT_OK:
-        Serial.println(F("\nImage taken"));
-        break;
+      {
+        display.setCursor(0, 30);
+        display.println(F("IMAGE TAKEN"));
+        display.display();
+      }
+      break;
       case FINGERPRINT_NOFINGER:
-        Serial.print(",");
-        break;
+      {
+        
+        display.setCursor(0, 30);
+        display.println(F("NO FINGER"));
+        display.display();  
+      }
+      break;
       case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println(F("Communication error"));
-        break;
+      {
+    
+        display.setCursor(0, 30);
+        display.println(F("COMMUNICATION ERROR"));
+        display.display();        
+      }
+      break;
       case FINGERPRINT_IMAGEFAIL:
-        Serial.println(F("Imaging error"));
-        break;
+      {
+   
+        display.setCursor(0, 30);
+        display.println(F("IMAGING ERROR"));
+        display.display();        
+      }
+      break;
       default:
-        Serial.println(F("Unknown error"));
-        break;
+      {
+      
+        display.setCursor(0, 30);
+        display.println(F("UNKNOWN ERROR"));
+        display.display();        
+      }
+      break;
     }
 
     if(p != FINGERPRINT_OK) continue;
@@ -62,23 +114,52 @@ void storeFingerPrint(uint8_t CB)
     switch (p) 
     {
       case FINGERPRINT_OK:
-        Serial.println(F("Image converted"));
-        break;
+      {
+      
+        display.setCursor(0, 40);
+        display.println(F("IMAGE CONVERTED"));
+        display.display();        
+      }        
+      break;
       case FINGERPRINT_IMAGEMESS:
-        Serial.println(F("Image too messy"));
-        break;
+      {
+      
+        display.setCursor(0, 40);
+        display.println(F("IMAGE TOO MESSY"));
+        display.display();        
+      }        
+      break;
       case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println(F("Communication error"));
-        break;
+      {
+      
+        display.setCursor(0, 40);
+        display.println(F("COMMUNICATION ERROR"));
+        display.display();        
+      }        
+      break;        
       case FINGERPRINT_FEATUREFAIL:
-        Serial.println(F("Could not find fingerprint features"));
-        break;
+      {
+      
+        display.setCursor(0, 40);
+        display.println(F("COULDN'T FIND FINGERPRINT FEATURES"));
+        display.display();        
+      }        
+      break;
       case FINGERPRINT_INVALIDIMAGE:
-        Serial.println(F("Could not find fingerprint features"));
-        break;
+      {
+      
+        display.setCursor(0, 40);
+        display.println(F("COULDN'T FIND FINGERPRINT FEATURES"));
+        display.display();        
+      }        
+      break;        
       default:
-        Serial.println(F("Unknown error"));
-        break;
+      {
+        display.setCursor(0, 40);
+        display.println(F("UNKOWN ERROR"));
+        display.display();  
+      }
+      break;
     }
   }  
 }
@@ -90,11 +171,19 @@ void storeFingerPrint(uint8_t CB)
 void enrollStudent()
 {
   begin:
-  Serial.print("Waiting for valid finger to enroll as #"); Serial.println(student_id);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);  
+  display.setCursor(0, 10);
+  display.println(F("Waiting..."));
+  display.display();
   storeFingerPrint(1);
+  
   // OK success!
- 
-  Serial.print("Remove finger ");
+  
+  display.setCursor(0, 50);
+  display.println(F("Remove finger "));
+  display.display();
   delay(2000);
   p = 0;
   while (p != FINGERPRINT_NOFINGER) 
@@ -102,25 +191,44 @@ void enrollStudent()
     p = finger.getImage();
   }
 
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);  
+  display.setCursor(0, 10);
+  display.println(F("Place same finger again..."));
+  display.display();
 
-  Serial.println(F("Place same finger again"));
   storeFingerPrint(2);
   // OK CB1 and CB2 done
 
  
-
+  delay(1000);
+  
   p = finger.createModel();
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);  
+  display.setCursor(0, 10);
+    
   if (p == FINGERPRINT_OK) 
   {
-    Serial.println(F("Prints matched!"));
+    display.println(F("PRINTS MATCHED!"));
+    display.display();
+    delay(1000);
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println(F("Communication error"));
+    display.println(F("COMMUNICATION ERROR"));
+    display.display();
+    delay(1000);
     goto begin;
   } else if (p == FINGERPRINT_ENROLLMISMATCH) {
-    Serial.println(F("Fingerprints did not match"));
+    display.println(F("PRINTS MISMATCH"));
+    display.display();
+    delay(1000);
     goto begin;
   } else {
-    Serial.println(F("Unknown error"));
+    display.println(F("UNKOWN ERROR"));
+    display.display();
+    delay(1000);
     goto begin;
   }  
   
@@ -128,17 +236,11 @@ void enrollStudent()
 
   p = finger.getModel();
 
-  switch (p) 
-  {
-    case FINGERPRINT_OK:
-      break;
-   default:
-      Serial.print(F("Unknown error ")); 
-      break;
-  }
+  if(p != FINGERPRINT_OK) 
+    goto begin;   
 
-
-Serial.println(F("Writting bytes "));  
+ 
+  
   uint8_t bytesReceived[554];
 
   int i = 0;int counter = 0;
@@ -168,30 +270,39 @@ Serial.println(F("Writting bytes "));
   for(i = 0;i < 128;i++)
   {
     fp_packet4[i] = bytesReceived[counter++];
-  }      
+  }
+  display.println(F("Complete"));
+  display.display();      
 }
 
 
 
 void loadTemplate()
 {
-  
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);  
+  display.setCursor(0, 10);
+   
   finger.uploadModelPercobaan(fp_packet1, fp_packet2, fp_packet3, fp_packet4);
-  
-  Serial.print(F("ID ")); Serial.println(student_id);
-
   p = finger.storeModel(student_id);
   staus_code = p;
+
   if (p == FINGERPRINT_OK) {
-    Serial.println(F("Stored!"));
+    display.println(F("STORED SUCCESSFULLY !"));
+    display.display();
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println(F("Communication error"));
+    display.println(F("COMMUNICATION ERROR"));
+    display.display();
   } else if (p == FINGERPRINT_BADLOCATION) {
-    Serial.println(F("Could not store in that location"));
+    display.println(F("BAD LOCATION"));
+    display.display();
   } else if (p == FINGERPRINT_FLASHERR) {
-    Serial.println(F("Error writing to flash"));
+    display.println(F("ERROR WRITTING TO FLASH"));
+    display.display();
   } else {
-    Serial.println(F("Unknown error"));
+    display.println(F("UNKOWN ERROR"));
+    display.display();
   }  
 
 
@@ -200,68 +311,38 @@ void loadTemplate()
 void checkAttendance()
 {
   p = -1;
-  Serial.print(F("Waiting for valid finger"));
-  while (p != FINGERPRINT_OK) 
-  {
-    p = finger.getImage();
-    switch (p) 
-    {
-      case FINGERPRINT_OK:
-        Serial.println(F("\nImage taken"));
-        break;
-      case FINGERPRINT_NOFINGER:
-        Serial.print(F(","));
-        break;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println(F("Communication error"));
-        break;
-      case FINGERPRINT_IMAGEFAIL:
-        Serial.println(F("Imaging error"));
-        break;
-      default:
-        Serial.println(F("Unknown error"));
-        break;
-    }
-
-    if(p != FINGERPRINT_OK) continue;
-
-    p = finger.image2Tz();
-    switch (p) 
-    {
-      case FINGERPRINT_OK:
-        Serial.println(F("Image converted"));
-        break;
-      case FINGERPRINT_IMAGEMESS:
-        Serial.println(F("Image too messy"));
-        break;
-      case FINGERPRINT_PACKETRECIEVEERR:
-        Serial.println(F("Communication error"));
-        break;
-      case FINGERPRINT_FEATUREFAIL:
-        Serial.println(F("Could not find fingerprint features"));
-        break;
-      case FINGERPRINT_INVALIDIMAGE:
-        Serial.println(F("Could not find fingerprint features"));
-        break;
-      default:
-        Serial.println(F("Unknown error"));
-        break;
-    }
-  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);  
+  display.setCursor(0, 10);
+  display.println(F("Waiting..."));
+  display.display();
+  storeFingerPrint(1);
+  
   fp_confidence = 0; student_id = 0x00;
   p = finger.fingerFastSearch();
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);  
+  display.setCursor(0, 10);
+    
   if (p == FINGERPRINT_OK) {
-    Serial.println(F("Found a print match!"));
     student_id = finger.fingerID;
     fp_confidence = finger.confidence;
+    char str[80];
+    sprintf(str, "Found match for %u with confidence %d", student_id,fp_confidence);
+    display.println(str);
+    display.display();    
   } else if (p == FINGERPRINT_PACKETRECIEVEERR) {
-    Serial.println(F("Communication error"));
-
+    display.println(F("Communication error"));
+    display.display();
   } else if (p == FINGERPRINT_NOTFOUND) {
-    Serial.println(F("Did not find a match"));
-
+    display.println(F("Did not find a match"));
+    display.display();
   } else {
-    Serial.println(F("Unknown error"));
+    display.println(F("Unknown error"));
+    display.display();
 
   }     
 
